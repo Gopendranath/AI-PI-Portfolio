@@ -1,5 +1,6 @@
 const axios = require('axios');
 require('dotenv').config();
+const { ImageModel } = require('../models/imageModel.js');
 
 
 const createImage = async (prompt) => {
@@ -33,6 +34,7 @@ const createImage = async (prompt) => {
 };
 
 const getImage = async (creationId) => {
+  const ImageData = await ImageModel.findOne({ imageId: creationId });
     const options = {
       method: 'GET',
       url: `https://api.starryai.com/creations/${creationId}`,
@@ -47,9 +49,15 @@ const getImage = async (creationId) => {
       try {
         const response = await axios.request(options);
         if (response && response.data && response.data.status === 'completed') {
-          return response.data.images[0];
+
+          const imageUrl = response.data.images[0].url;
+
+          ImageData.imageUrl = imageUrl;
+          await ImageData.save();
+
+          return response.data.images[0].url;
         } else {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 3000));
           return fetchImage(); // recursive call
         }
       } catch (error) {
